@@ -89,7 +89,7 @@ class Mail
 
     public static function __callStatic($name, $arguments)
     {
-        return call_user_func_array([self::$mailer, $name], $arguments);
+        return call_user_func_array([self::buildMailer(), $name], $arguments);
     }
 
 }
