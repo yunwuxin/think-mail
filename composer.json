@@ -3,10 +3,11 @@
     "description": "The Mailer Library For ThinkPHP5",
     "type": "think-extend",
     "require": {
-        "topthink/think-installer": ">=1.0.10",
+        "topthink/think-installer": ">=1.0.10,<1.1",
         "swiftmailer/swiftmailer": "^5.4",
         "guzzlehttp/guzzle": "^6.2",
-        "topthink/think-helper": "^1.0"
+        "topthink/think-helper": ">=1.0.5,<1.1",
+        "topthink/think-queue": "^1.1"
     },
     "require-dev": {
         "topthink/framework": "^5.0"

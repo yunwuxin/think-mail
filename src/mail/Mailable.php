@@ -14,8 +14,17 @@ namespace yunwuxin\mail;
 use ReflectionClass;
 use ReflectionProperty;
 use think\Collection;
+use think\Config;
 use think\helper\Str;
+use think\View;
 
+/**
+ * Class Mailable
+ * @package yunwuxin\mail
+ *
+ * @property string  $queue
+ * @property integer $delay
+ */
 class Mailable
 {
     /** @var array 发信人 */
@@ -51,20 +60,19 @@ class Mailable
     /** @var array 附件(数据) */
     protected $rawAttachments = [];
 
-    /** @var array 消息处理回调 */
-    protected $callbacks = [];
+    /** @var integer 优先级 */
+    protected $priority;
 
-    public function send(Mailer $mailer)
+    public function buildMessage(Message $message)
     {
         $this->build();
 
-        $mailer->send($this->buildView(), $this->buildViewData(), function (Message $message) {
-            $this->buildFrom($message)
-                ->buildRecipients($message)
-                ->buildSubject($message)
-                ->buildAttachments($message)
-                ->runCallbacks($message);
-        });
+        $this->buildContent($message)
+            ->buildFrom($message)
+            ->buildRecipients($message)
+            ->buildSubject($message)
+            ->buildAttachments($message)
+            ->buildPriority($message);
 
     }
 
@@ -74,25 +82,11 @@ class Mailable
     }
 
     /**
-     * 构造邮件内容
-     * @return array|string
-     */
-    protected function buildView()
-    {
-        if (isset($this->view, $this->textView)) {
-            return [$this->view, $this->textView];
-        } elseif (isset($this->textView)) {
-            return ['text' => $this->textView];
-        } else {
-            return $this->view;
-        }
-    }
-
-    /**
      * 构造数据
+     * @param Message $message
      * @return array
      */
-    protected function buildViewData()
+    protected function buildViewData(Message $message)
     {
         $data = $this->viewData;
 
@@ -100,7 +94,30 @@ class Mailable
             $data[$property->getName()] = $property->getValue($this);
         }
 
+        $data['message'] = $message;
+
         return $data;
+    }
+
+    /**
+     * 添加内容
+     * @param Message $message
+     * @return $this
+     */
+    protected function buildContent(Message $message)
+    {
+        $data = $this->buildViewData($message);
+
+        if (isset($this->view)) {
+            $message->setBody($this->fetchView($this->view, $data), 'text/html');
+        }
+
+        if (isset($this->textView)) {
+            $method = isset($this->view) ? 'addPart' : 'setBody';
+
+            $message->$method($this->fetchView($this->textView, $data), 'text/plain');
+        }
+        return $this;
     }
 
     /**
@@ -168,17 +185,11 @@ class Mailable
         return $this;
     }
 
-    /**
-     * 执行回调
-     * @param $message
-     * @return $this
-     */
-    protected function runCallbacks(Message $message)
+    protected function buildPriority(Message $message)
     {
-        foreach ($this->callbacks as $callback) {
-            $callback($message->getSwiftMessage());
+        if (isset($this->priority)) {
+            $message->getSwiftMessage()->setPriority($this->priority);
         }
-
         return $this;
     }
 
@@ -189,9 +200,7 @@ class Mailable
      */
     public function priority($level = 3)
     {
-        $this->callbacks[] = function (\Swift_Message $message) use ($level) {
-            $message->setPriority($level);
-        };
+        $this->priority = $level;
 
         return $this;
     }
@@ -295,6 +304,17 @@ class Mailable
     }
 
     /**
+     * 调用模板引擎渲染模板
+     * @param $view
+     * @param $data
+     * @return string
+     */
+    protected function fetchView($view, $data)
+    {
+        return View::instance(Config::get('template'), Config::get('view_replace_str'))->fetch($view, $data);
+    }
+
+    /**
      * 设置标题
      * @param $subject
      * @return $this
@@ -377,17 +397,4 @@ class Mailable
 
         return $this;
     }
-
-    /**
-     * 设置消息回调
-     * @param $callback
-     * @return $this
-     */
-    public function withSwiftMessage($callback)
-    {
-        $this->callbacks[] = $callback;
-
-        return $this;
-    }
-
 }

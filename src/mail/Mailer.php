@@ -10,17 +10,14 @@
 // +----------------------------------------------------------------------
 namespace yunwuxin\mail;
 
-use Closure;
-use InvalidArgumentException;
 use Swift_Message;
 use think\Config;
-use think\View;
+use think\Queue;
+use think\queue\Queueable;
+use think\queue\ShouldQueue;
 
 class Mailer
 {
-
-    /** @var  View */
-    protected $view;
 
     /** @var  \Swift_Mailer */
     protected $swift;
@@ -63,19 +60,27 @@ class Mailer
         return $this;
     }
 
-    public function send($view, array $data = [], $callback = null)
+    /**
+     * 发送邮件
+     * @param Mailable $mailable
+     */
+    public function send(Mailable $mailable)
     {
-        if ($view instanceof Mailable) {
-            return $view->send($this);
+        if ($mailable instanceof ShouldQueue) {
+            return $this->queue($mailable);
         }
 
-        list($view, $plain, $raw) = $this->parseView($view);
+        return $this->sendNow($mailable);
+    }
 
-        $data['message'] = $message = $this->createMessage();
+    /**
+     * 发送邮件(立即发送)
+     * @param Mailable $mailable
+     */
+    public function sendNow(Mailable $mailable)
+    {
 
-        $this->addContent($message, $view, $plain, $raw, $data);
-
-        $this->callMessageBuilder($callback, $message);
+        $message = $this->createMessage($mailable);
 
         if (isset($this->to['address'])) {
             $message->to($this->to['address'], $this->to['name'], true);
@@ -91,12 +96,25 @@ class Mailer
         $message = $message->getSwiftMessage();
 
         $this->sendSwiftMessage($message);
-
     }
 
-    public function sendNow($view, array $data = [])
+    /**
+     * 推送至队列发送
+     * @param Mailable $mailable
+     */
+    public function queue(Mailable $mailable)
     {
-        //  return $this->send();
+        $job = new SendQueuedMailable($mailable);
+
+        if (in_array(Queueable::class, class_uses_recursive($mailable))) {
+            if ($mailable->delay > 0) {
+                Queue::later($mailable->delay, $job, '', $mailable->queue);
+            } else {
+                Queue::push($job, '', $mailable->queue);
+            }
+        } else {
+            Queue::push($job);
+        }
     }
 
     /**
@@ -110,9 +128,10 @@ class Mailer
 
     /**
      * 创建Message
+     * @param Mailable $mailable
      * @return Message
      */
-    protected function createMessage()
+    protected function createMessage(Mailable $mailable)
     {
         $message = new Message(new Swift_Message);
 
@@ -120,6 +139,8 @@ class Mailer
         if (!empty($from['address'])) {
             $message->from($from['address'], $from['name']);
         }
+
+        $mailable->buildMessage($message);
 
         return $message;
     }
@@ -139,80 +160,4 @@ class Mailer
         }
     }
 
-    /**
-     * 添加内容
-     * @param $message
-     * @param $view
-     * @param $plain
-     * @param $raw
-     * @param $data
-     */
-    protected function addContent(Message $message, $view, $plain, $raw, $data)
-    {
-        if (isset($view)) {
-            $message->setBody($this->getView($view, $data), 'text/html');
-        }
-
-        if (isset($plain)) {
-            $method = isset($view) ? 'addPart' : 'setBody';
-
-            $message->$method($this->getView($plain, $data), 'text/plain');
-        }
-
-        if (isset($raw)) {
-            $method = (isset($view) || isset($plain)) ? 'addPart' : 'setBody';
-
-            $message->$method($raw, 'text/plain');
-        }
-    }
-
-    /**
-     * 调用模板引擎渲染模板
-     * @param $view
-     * @param $data
-     * @return string
-     */
-    protected function getView($view, $data)
-    {
-        if (!$this->view) {
-            $this->view = View::instance(Config::get('template'), Config::get('view_replace_str'));
-        }
-
-        return $this->view->fetch($view, $data);
-    }
-
-    /**
-     * 解析模板
-     * @param $view
-     * @return array
-     */
-    protected function parseView($view)
-    {
-        if (is_string($view)) {
-            return [$view, null, null];
-        }
-
-        if (is_array($view) && isset($view[0])) {
-            return [$view[0], $view[1], null];
-        }
-
-        if (is_array($view)) {
-            return [
-                isset($view['html']) ? $view['html'] : '',
-                isset($view['text']) ? $view['text'] : '',
-                isset($view['raw']) ? $view['raw'] : ''
-            ];
-        }
-
-        throw new InvalidArgumentException('Invalid view.');
-    }
-
-    protected function callMessageBuilder($callback, Message $message)
-    {
-        if ($callback instanceof Closure) {
-            return call_user_func($callback, $message);
-        }
-
-        throw new InvalidArgumentException('Callback is not valid.');
-    }
 }

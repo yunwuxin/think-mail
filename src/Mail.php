@@ -17,17 +17,19 @@ use Swift_SendmailTransport;
 use Swift_SmtpTransport;
 use think\Config;
 use think\helper\Str;
+use yunwuxin\mail\Mailable;
 use yunwuxin\mail\Mailer;
 
 /**
  * Class Mail
  * @package yunwuxin
  *
- * @method Mailer to($users)
- * @method Mailer cc($users)
- * @method Mailer bcc($users)
- * @method void send($view, array $data = [])
- * @method void sendNow($view, array $data = [])
+ * @method static Mailer to($users)
+ * @method static Mailer cc($users)
+ * @method static Mailer bcc($users)
+ * @method static void send(Mailable $mailable)
+ * @method static void sendNow(Mailable $mailable)
+ * @method static void queue(Mailable $mailable)
  */
 class Mail
 {
