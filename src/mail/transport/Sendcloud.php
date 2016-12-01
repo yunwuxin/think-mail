@@ -50,7 +50,7 @@ class Sendcloud extends Transport
             'apiUser'  => $this->user,
             'apiKey'   => $this->key,
             'from'     => $this->getAddress($message->getFrom()),
-            'fromName' => reset(array_values($message->getFrom())),
+            'fromName' => $this->getFromName($message->getFrom()),
             'to'       => $this->getAddresses($message->getTo()),
             'subject'  => $message->getSubject(),
             'cc'       => $this->getAddresses($message->getCc()),
@@ -76,12 +76,22 @@ class Sendcloud extends Transport
         return $this->numberOfRecipients($message);
     }
 
+    protected function getFromName($data)
+    {
+        if (!$data) {
+            return null;
+        }
+        $data = array_values($data);
+        return reset($data);
+    }
+
     protected function getAddress($data)
     {
         if (!$data) {
             return null;
         }
-        return reset(array_keys($data));
+        $data = array_keys($data);
+        return reset($data);
     }
 
     protected function getAddresses($data)

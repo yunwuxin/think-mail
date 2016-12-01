@@ -84,7 +84,7 @@ abstract class Transport implements \Swift_Transport
 
     protected function getHttpClient()
     {
-        $config = Config::get('mail.guzzle');
+        $config = Config::get('mail.guzzle') ?: [];
         return new Client($config);
     }
 
