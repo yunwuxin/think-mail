@@ -74,7 +74,7 @@ class Mail
             $method = 'build' . Str::studly($config['transport']) . 'Transport';
 
             if (method_exists(self::class, $method)) {
-                $transport = self::$method();
+                $transport = self::$method($config);
             } else {
                 $className = false !== strpos($config['transport'], '\\') ? $config['transport'] : "\\yunwuxin\\mail\\transport\\" . Str::studly($config['transport']);
                 if (class_exists($className)) {
