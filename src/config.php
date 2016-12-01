@@ -10,9 +10,13 @@
 // +----------------------------------------------------------------------
 
 return [
-    'transport' => 'smtp', //smtp sendmail mail log sendcloud
-
-    'from' => [
+    'transport'  => 'smtp', //smtp sendmail mail log sendcloud
+    'host'       => 'mail.example.com',
+    'port'       => 25,
+    'encryption' => 'tls',
+    'username'   => 'username',
+    'password'   => 'password',
+    'from'       => [
         'address' => 'example@example',
         'name'    => 'App Name'
     ]

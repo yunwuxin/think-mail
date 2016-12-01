@@ -60,9 +60,6 @@ class Mailable
     /** @var array 附件(数据) */
     protected $rawAttachments = [];
 
-    /** @var integer 优先级 */
-    protected $priority;
-
     public function buildMessage(Message $message)
     {
         $this->build();
@@ -72,11 +69,15 @@ class Mailable
             ->buildRecipients($message)
             ->buildSubject($message)
             ->buildAttachments($message)
-            ->buildPriority($message);
-
+            ->afterBuild($message->getSwiftMessage());
     }
 
     protected function build()
+    {
+        //...
+    }
+
+    protected function afterBuild(\Swift_Message $message)
     {
         //...
     }
@@ -181,26 +182,6 @@ class Mailable
                 $attachment['data'], $attachment['name'], $attachment['options']
             );
         }
-
-        return $this;
-    }
-
-    protected function buildPriority(Message $message)
-    {
-        if (isset($this->priority)) {
-            $message->getSwiftMessage()->setPriority($this->priority);
-        }
-        return $this;
-    }
-
-    /**
-     * 设置优先级
-     * @param int $level
-     * @return $this
-     */
-    public function priority($level = 3)
-    {
-        $this->priority = $level;
 
         return $this;
     }
