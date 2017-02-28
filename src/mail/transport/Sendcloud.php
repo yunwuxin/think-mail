@@ -42,8 +42,8 @@ class Sendcloud extends Transport
      *
      * @param Swift_Mime_Message $message
      * @param string[]           $failedRecipients An array of failures by-reference
-     *
      * @return int
+     * @throws SendcloudException
      */
     public function send(Swift_Mime_Message $message, &$failedRecipients = null)
     {

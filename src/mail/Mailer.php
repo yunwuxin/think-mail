@@ -152,7 +152,6 @@ class Mailer
      */
     protected function sendSwiftMessage($message)
     {
-
         try {
             return $this->swift->send($message, $this->failedRecipients);
         } finally {
