@@ -12,6 +12,7 @@
 namespace yunwuxin\mail\transport;
 
 use Swift_Mime_Message;
+use yunwuxin\mail\exception\SendcloudException;
 use yunwuxin\mail\Transport;
 
 class Sendcloud extends Transport
@@ -70,9 +71,18 @@ class Sendcloud extends Transport
         }
 
         $this->query = array_filter($this->query);
-        $this->getHttpClient()->post($this->api, [
+        $response    = $this->getHttpClient()->post($this->api, [
             'multipart' => $this->query,
         ]);
+
+        $content = $response->getBody()->getContents();
+
+        $content = json_decode($content, true);
+
+        if ($content === false || !$content['result']) {
+            throw new SendcloudException(!empty($content['message']) ? $content['message'] : '发送失败');
+        }
+
         return $this->numberOfRecipients($message);
     }
 

@@ -67,10 +67,10 @@ class Mailer
     public function send(Mailable $mailable)
     {
         if ($mailable instanceof ShouldQueue) {
-            return $this->queue($mailable);
+            $this->queue($mailable);
+        } else {
+            $this->sendNow($mailable);
         }
-
-        return $this->sendNow($mailable);
     }
 
     /**
