@@ -75,6 +75,8 @@ class Sendcloud extends Transport
             'multipart' => $this->query,
         ]);
 
+        $this->query = [];
+
         $content = $response->getBody()->getContents();
 
         $content = json_decode($content, true);
