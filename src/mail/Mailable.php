@@ -11,12 +11,21 @@
 
 namespace yunwuxin\mail;
 
+use cebe\markdown\GithubMarkdown;
 use ReflectionClass;
 use ReflectionProperty;
+use RuntimeException;
+use think\App;
 use think\Collection;
 use think\Config;
 use think\helper\Str;
 use think\View;
+use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
+use Twig_Environment;
+use Twig_Loader_Filesystem;
+use Twig_SimpleFilter;
+use Twig_SimpleFunction;
+use yunwuxin\mail\twig\TokenParser\Component;
 
 /**
  * Class Mailable
@@ -50,6 +59,9 @@ class Mailable
 
     /** @var string 邮件内容(纯文本) */
     protected $textView;
+
+    /** @var string 邮件内容(MarkDown) */
+    protected $markdown;
 
     /** @var array 动态数据 */
     protected $viewData = [];
@@ -111,14 +123,64 @@ class Mailable
 
         if (isset($this->view)) {
             $message->setBody($this->fetchView($this->view, $data), 'text/html');
-        }
-
-        if (isset($this->textView)) {
+        } elseif (isset($this->textView)) {
             $method = isset($this->view) ? 'addPart' : 'setBody';
 
             $message->$method($this->fetchView($this->textView, $data), 'text/plain');
+        } elseif (isset($this->markdown)) {
+
+            $html = $this->parseDown($this->markdown, $data);
+
+            $html = (new CssToInlineStyles())->convert($html, file_get_contents(__DIR__ . 'resource/css/default.css'));
+
+            $message->setBody($html, 'text/html');
         }
         return $this;
+    }
+
+    /**
+     * 解析markdown
+     * @param $view
+     * @param $data
+     * @return string
+     */
+    protected function parseDown($view, $data)
+    {
+        if (!mkdir(TEMP_PATH, 0755, true)) {
+            throw new RuntimeException('Can not make the cache dir!');
+        }
+
+        $viewPath = Config::get('mail.view_path') ?: APP_PATH . 'view' . DIRECTORY_SEPARATOR;
+
+        $loader = new Twig_Loader_Filesystem(APP_PATH . $viewPath);
+
+        $loader->addPath(__DIR__ . 'resource/view', 'mail');
+
+        $twig = new Twig_Environment($loader, [
+            'debug'            => App::$debug,
+            'auto_reload'      => App::$debug,
+            'cache'            => TEMP_PATH,
+            'strict_variables' => true
+        ]);
+
+        $twig->registerUndefinedFunctionCallback(function ($name) {
+            if (function_exists($name)) {
+                return new Twig_SimpleFunction($name, $name);
+            }
+
+            return false;
+        });
+
+        $twig->addFilter(new Twig_SimpleFilter('markdown', function ($content) {
+            $parser                 = new GithubMarkdown();
+            $parser->html5          = true;
+            $parser->enableNewlines = true;
+            return $parser->parse($content);
+        }));
+
+        $twig->addTokenParser(new Component());
+
+        return $twig->render($view, $data);
     }
 
     /**
@@ -330,6 +392,14 @@ class Mailable
     public function text($textView, array $data = [])
     {
         $this->textView = $textView;
+        $this->viewData = $data;
+
+        return $this;
+    }
+
+    public function markdown($markdown, array $data = [])
+    {
+        $this->markdown = $markdown;
         $this->viewData = $data;
 
         return $this;
