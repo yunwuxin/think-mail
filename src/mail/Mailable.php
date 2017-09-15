@@ -11,7 +11,6 @@
 
 namespace yunwuxin\mail;
 
-use cebe\markdown\GithubMarkdown;
 use ReflectionClass;
 use ReflectionProperty;
 use RuntimeException;
@@ -22,9 +21,9 @@ use think\helper\Str;
 use think\View;
 use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
 use Twig_Environment;
-use Twig_Loader_Filesystem;
 use Twig_SimpleFilter;
 use Twig_SimpleFunction;
+use yunwuxin\mail\twig\Loader;
 use yunwuxin\mail\twig\TokenParser\Component;
 
 /**
@@ -131,7 +130,7 @@ class Mailable
 
             $html = $this->parseDown($this->markdown, $data);
 
-            $html = (new CssToInlineStyles())->convert($html, file_get_contents(__DIR__ . 'resource/css/default.css'));
+            $html = (new CssToInlineStyles())->convert($html, file_get_contents(__DIR__ . '/resource/css/default.css'));
 
             $message->setBody($html, 'text/html');
         }
@@ -146,15 +145,16 @@ class Mailable
      */
     protected function parseDown($view, $data)
     {
-        if (!mkdir(TEMP_PATH, 0755, true)) {
-            throw new RuntimeException('Can not make the cache dir!');
+        if (!is_dir(TEMP_PATH)) {
+            if (!mkdir(TEMP_PATH, 0755, true)) {
+                throw new RuntimeException('Can not make the cache dir!');
+            }
         }
+        $viewPath = Config::get('template.view_path') ?: APP_PATH . 'view' . DIRECTORY_SEPARATOR;
 
-        $viewPath = Config::get('mail.view_path') ?: APP_PATH . 'view' . DIRECTORY_SEPARATOR;
+        $loader = new Loader($viewPath);
 
-        $loader = new Twig_Loader_Filesystem(APP_PATH . $viewPath);
-
-        $loader->addPath(__DIR__ . 'resource/view', 'mail');
+        $loader->addPath(__DIR__ . '/resource/view', 'mail');
 
         $twig = new Twig_Environment($loader, [
             'debug'            => App::$debug,
@@ -172,15 +172,14 @@ class Mailable
         });
 
         $twig->addFilter(new Twig_SimpleFilter('markdown', function ($content) {
-            $parser                 = new GithubMarkdown();
-            $parser->html5          = true;
-            $parser->enableNewlines = true;
+            $parser        = new Markdown();
+            $parser->html5 = true;
             return $parser->parse($content);
         }));
 
         $twig->addTokenParser(new Component());
 
-        return $twig->render($view, $data);
+        return $twig->render($view . '.twig', $data);
     }
 
     /**

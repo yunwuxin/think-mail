@@ -1,7 +1,7 @@
 /* Base */
 
 body, body *:not(html):not(style):not(br):not(tr):not(code) {
-    font-family: Avenir, Helvetica, sans-serif;
+    font-family: "微软雅黑", "Microsoft Yahei", Avenir, Helvetica, sans-serif;
     box-sizing: border-box;
 }
 

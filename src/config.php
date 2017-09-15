@@ -19,6 +19,5 @@ return [
     'from'       => [
         'address' => 'example@example',
         'name'    => 'App Name'
-    ],
-    'view_path'  => ''
+    ]
 ];

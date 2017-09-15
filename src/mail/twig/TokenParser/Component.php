@@ -2,7 +2,6 @@
 
 namespace yunwuxin\mail\twig\TokenParser;
 
-use Twig_Node_Include;
 use Twig_NodeInterface;
 use Twig_Token;
 use Twig_TokenParser;
@@ -23,13 +22,11 @@ class Component extends Twig_TokenParser
         list($variables, $only, $ignoreMissing) = $this->parseArguments();
 
         $stream = $this->parser->getStream();
-        $stream->expect(Twig_Token::BLOCK_END_TYPE);
-        $slot = $this->parser->subparse([$this, 'decideBlockEnd'], true);
+
+        $body = $this->parser->subparse([$this, 'decideBlockEnd'], true);
         $stream->expect(Twig_Token::BLOCK_END_TYPE);
 
-        $variables['slot'] = $slot;
-
-        return new Twig_Node_Include($expr, $variables, $only, $ignoreMissing, $token->getLine(), $this->getTag());
+        return new \yunwuxin\mail\twig\Node\Component($body, $expr, $variables, $only, $ignoreMissing, $token->getLine(), $this->getTag());
     }
 
     public function decideBlockEnd(Twig_Token $token)
@@ -60,7 +57,7 @@ class Component extends Twig_TokenParser
 
         $stream->expect(Twig_Token::BLOCK_END_TYPE);
 
-        return [(array) $variables, $only, $ignoreMissing];
+        return [$variables, $only, $ignoreMissing];
     }
 
     /**

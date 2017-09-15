@@ -7,11 +7,11 @@
 {% endblock %}
 
 {% block body %}
-
+    {{ slot|markdown|raw }}
 {% endblock %}
 
 {% block footer %}
     {% component "@mail/footer.twig" %}
-    &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
+    © {{ 'now'|date('Y') }} {{ config('app.name') }}. All rights reserved.
     {% endcomponent %}
 {% endblock %}
