@@ -137,6 +137,17 @@ class Mailable
         return $this;
     }
 
+    protected function buildTwigLoader()
+    {
+        $viewPath = Config::get('template.view_path') ?: APP_PATH . 'view' . DIRECTORY_SEPARATOR;
+
+        $loader = new Loader($viewPath);
+
+        $loader->addPath(__DIR__ . '/resource/view', 'mail');
+
+        return $loader;
+    }
+
     /**
      * 解析markdown
      * @param $view
@@ -150,11 +161,8 @@ class Mailable
                 throw new RuntimeException('Can not make the cache dir!');
             }
         }
-        $viewPath = Config::get('template.view_path') ?: APP_PATH . 'view' . DIRECTORY_SEPARATOR;
 
-        $loader = new Loader($viewPath);
-
-        $loader->addPath(__DIR__ . '/resource/view', 'mail');
+        $loader = $this->buildTwigLoader();
 
         $twig = new Twig_Environment($loader, [
             'debug'            => App::$debug,
