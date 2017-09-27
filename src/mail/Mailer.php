@@ -11,7 +11,7 @@
 namespace yunwuxin\mail;
 
 use Swift_Message;
-use think\Config;
+use think\facade\Config;
 use think\Queue;
 use think\queue\Queueable;
 use think\queue\ShouldQueue;

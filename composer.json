@@ -13,7 +13,7 @@
         "tijsverkoyen/css-to-inline-styles": "^2.2"
     },
     "require-dev": {
-        "topthink/framework": "^5.0"
+        "topthink/framework": "^5.1"
     },
     "license": "Apache-2.0",
     "authors": [

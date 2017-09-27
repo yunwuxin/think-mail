@@ -14,11 +14,12 @@ namespace yunwuxin\mail;
 use ReflectionClass;
 use ReflectionProperty;
 use RuntimeException;
-use think\App;
 use think\Collection;
-use think\Config;
+use think\facade\App;
+use think\facade\Config;
+use think\facade\Env;
+use think\facade\View;
 use think\helper\Str;
-use think\View;
 use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
 use Twig_Environment;
 use Twig_SimpleFilter;
@@ -139,7 +140,7 @@ class Mailable
 
     protected function buildTwigLoader()
     {
-        $viewPath = Config::get('template.view_path') ?: APP_PATH . 'view' . DIRECTORY_SEPARATOR;
+        $viewPath = Config::get('template.view_path') ?: Env::get('app_path') . 'view' . DIRECTORY_SEPARATOR;
 
         $loader = new Loader($viewPath);
 
@@ -156,8 +157,9 @@ class Mailable
      */
     protected function parseDown($view, $data)
     {
-        if (!is_dir(TEMP_PATH)) {
-            if (!mkdir(TEMP_PATH, 0755, true)) {
+        $path = Env::get('runtime_path') . 'temp';
+        if (!is_dir($path)) {
+            if (!mkdir($path, 0755, true)) {
                 throw new RuntimeException('Can not make the cache dir!');
             }
         }
@@ -165,10 +167,10 @@ class Mailable
         $loader = $this->buildTwigLoader();
 
         $twig = new Twig_Environment($loader, [
-            'debug'            => App::$debug,
-            'auto_reload'      => App::$debug,
-            'cache'            => TEMP_PATH,
-            'strict_variables' => true
+            'debug'            => App::isDebug(),
+            'auto_reload'      => App::isDebug(),
+            'cache'            => $path,
+            'strict_variables' => true,
         ]);
 
         $twig->registerUndefinedFunctionCallback(function ($name) {
@@ -361,7 +363,7 @@ class Mailable
      */
     protected function fetchView($view, $data)
     {
-        return View::instance(Config::get('template'), Config::get('view_replace_str'))->fetch($view, $data);
+        return View::init(Config::pull('template'), Config::get('view_replace_str'))->fetch($view, $data);
     }
 
     /**

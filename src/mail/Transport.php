@@ -14,7 +14,7 @@ namespace yunwuxin\mail;
 use GuzzleHttp\Client;
 use Swift_Events_EventListener;
 use Swift_Mime_Message;
-use think\Config;
+use think\facade\Config;
 
 abstract class Transport implements \Swift_Transport
 {

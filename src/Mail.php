@@ -15,7 +15,7 @@ use Swift_Mailer;
 use Swift_MailTransport;
 use Swift_SendmailTransport;
 use Swift_SmtpTransport;
-use think\Config;
+use think\facade\Config;
 use think\helper\Str;
 use yunwuxin\mail\Mailable;
 use yunwuxin\mail\Mailer;
@@ -69,7 +69,7 @@ class Mail
     protected static function buildMailer()
     {
         if (!self::$mailer) {
-            $config = Config::get('mail');
+            $config = Config::pull('mail');
 
             $method = 'build' . Str::studly($config['transport']) . 'Transport';
 
