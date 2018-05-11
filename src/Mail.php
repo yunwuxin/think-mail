@@ -15,29 +15,36 @@ use Swift_Mailer;
 use Swift_MailTransport;
 use Swift_SendmailTransport;
 use Swift_SmtpTransport;
-use think\facade\Config;
+use think\Config;
 use think\helper\Str;
 use yunwuxin\mail\Mailable;
 use yunwuxin\mail\Mailer;
 
 /**
  * Class Mail
- * @package yunwuxin
  *
- * @method static Mailer to($users)
- * @method static Mailer cc($users)
- * @method static Mailer bcc($users)
- * @method static void send(Mailable $mailable)
- * @method static void sendNow(Mailable $mailable)
- * @method static void queue(Mailable $mailable)
+ * @package yunwuxin
+ * @method Mailer to($users)
+ * @method Mailer cc($users)
+ * @method Mailer bcc($users)
+ * @method void send(Mailable $mailable)
+ * @method void sendNow(Mailable $mailable)
+ * @method void queue(Mailable $mailable)
  */
 class Mail
 {
 
     /** @var Mailer */
-    protected static $mailer;
+    protected $mailer;
 
-    protected static function buildSmtpTransport($config)
+    protected $config;
+
+    public function __construct($config)
+    {
+        $this->config = $config;
+    }
+
+    protected function buildSmtpTransport($config)
     {
         $transport = Swift_SmtpTransport::newInstance($config['host'], $config['port']);
         if (isset($config['encryption'])) {
@@ -56,20 +63,20 @@ class Mail
         return $transport;
     }
 
-    protected static function buildSendmailTransport($config)
+    protected function buildSendmailTransport($config)
     {
         return Swift_SendmailTransport::newInstance($config['command']);
     }
 
-    protected static function buildMailTransport($config)
+    protected function buildMailTransport($config)
     {
         return Swift_MailTransport::newInstance();
     }
 
-    protected static function buildMailer()
+    protected function buildMailer()
     {
-        if (!self::$mailer) {
-            $config = Config::pull('mail');
+        if (!$this->mailer) {
+            $config = $this->config;
 
             $method = 'build' . Str::studly($config['transport']) . 'Transport';
 
@@ -84,14 +91,19 @@ class Mail
                 }
             }
             $swift        = Swift_Mailer::newInstance($transport);
-            self::$mailer = new Mailer($swift);
+            $this->mailer = new Mailer($swift);
         }
-        return self::$mailer;
+        return $this->mailer;
     }
 
-    public static function __callStatic($name, $arguments)
+    public function __call($name, $arguments)
     {
-        return call_user_func_array([self::buildMailer(), $name], $arguments);
+        return call_user_func_array([$this->buildMailer(), $name], $arguments);
+    }
+
+    public static function __make(Config $config)
+    {
+        return new self($config->get('mail'));
     }
 
 }

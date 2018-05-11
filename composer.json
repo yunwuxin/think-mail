@@ -3,17 +3,17 @@
     "description": "The Mailer Library For ThinkPHP5",
     "type": "think-extend",
     "require": {
-        "topthink/think-installer": ">=1.0.10,<1.1",
+        "topthink/think-installer": "^2.0",
         "swiftmailer/swiftmailer": "^5.4",
         "guzzlehttp/guzzle": "^6.2",
-        "topthink/think-helper": ">=1.0.5,<1.1",
-        "topthink/think-queue": "^1.1",
+        "topthink/think-helper": "^1.0",
+        "topthink/think-queue": "^2.0",
         "cebe/markdown": "^1.1",
-        "twig/twig": "^1.34",
+        "twig/twig": "^1.0",
         "tijsverkoyen/css-to-inline-styles": "^2.2"
     },
     "require-dev": {
-        "topthink/framework": "^5.1"
+        "topthink/framework": "5.1.x-dev"
     },
     "license": "Apache-2.0",
     "authors": [
