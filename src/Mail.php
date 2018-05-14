@@ -103,7 +103,7 @@ class Mail
 
     public static function __make(Config $config)
     {
-        return new self($config->get('mail'));
+        return new self($config->pull('mail'));
     }
 
 }
