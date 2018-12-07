@@ -9,7 +9,7 @@
         "topthink/think-helper": ">=1.0.5,<1.1",
         "topthink/think-queue": "^1.1",
         "cebe/markdown": "^1.1",
-        "twig/twig": "^1.34",
+        "twig/twig": "^2.0",
         "tijsverkoyen/css-to-inline-styles": "^2.2"
     },
     "require-dev": {
