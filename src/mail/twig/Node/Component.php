@@ -2,13 +2,13 @@
 
 namespace yunwuxin\mail\twig\Node;
 
-use Twig_Node;
-use Twig_Node_Expression;
-use Twig_Compiler;
+use Twig\Compiler;
+use Twig\Node\Expression\AbstractExpression;
+use Twig\Node\Node;
 
-class Component extends Twig_Node
+class Component extends Node
 {
-    public function __construct(Twig_Node $body, Twig_Node_Expression $expr, Twig_Node_Expression $variables = null, $only = false, $ignoreMissing = false, $lineno, $tag = null)
+    public function __construct(Node $body, AbstractExpression $expr, AbstractExpression $variables, $only = false, $ignoreMissing = false, $lineno = 0, $tag = null)
     {
         $nodes = ['expr' => $expr, 'body' => $body];
         if (null !== $variables) {
@@ -18,66 +18,80 @@ class Component extends Twig_Node
         parent::__construct($nodes, ['only' => (bool) $only, 'ignore_missing' => (bool) $ignoreMissing], $lineno, $tag);
     }
 
-    public function compile(Twig_Compiler $compiler)
+    public function compile(Compiler $compiler)
     {
         $compiler->addDebugInfo($this);
 
         if ($this->getAttribute('ignore_missing')) {
+
+            $template = $compiler->getVarName();
+
             $compiler
+                ->write(sprintf("$%s = null;\n", $template))
                 ->write("try {\n")
-                ->indent();
-        }
+                ->indent()
+                ->write(sprintf('$%s = ', $template));
 
-        $compiler
-            ->write('unset($context["slot"]);' . PHP_EOL)
-            ->write('ob_start();' . PHP_EOL)
-            ->subcompile($this->getNode('body'))
-            ->write('$slot = ob_get_clean();' . PHP_EOL);
+            $this->addGetTemplate($compiler);
 
-        $this->addGetTemplate($compiler);
-
-        $compiler->raw('->display(');
-
-        $this->addTemplateArguments($compiler);
-
-        $compiler->raw(");\n");
-
-        if ($this->getAttribute('ignore_missing')) {
             $compiler
+                ->raw(";\n")
                 ->outdent()
-                ->write("} catch (Twig_Error_Loader \$e) {\n")
+                ->write("} catch (LoaderError \$e) {\n")
                 ->indent()
                 ->write("// ignore missing template\n")
                 ->outdent()
-                ->write("}\n\n");
+                ->write("}\n")
+                ->write(sprintf("if ($%s) {\n", $template))
+                ->indent()
+                ->write(sprintf('$%s->display(', $template));
+            $this->addTemplateArguments($compiler);
+            $compiler
+                ->raw(");\n")
+                ->outdent()
+                ->write("}\n");
+        } else {
+            $this->addGetTemplate($compiler);
+            $compiler->raw('->display(');
+            $this->addTemplateArguments($compiler);
+            $compiler->raw(");\n");
         }
     }
 
-    protected function addGetTemplate(Twig_Compiler $compiler)
+    protected function addGetTemplate(Compiler $compiler)
     {
         $compiler
             ->write('$this->loadTemplate(')
             ->subcompile($this->getNode('expr'))
-            ->raw(', ')
+            ->raw('.".twig", ')
             ->repr($this->getTemplateName())
             ->raw(', ')
             ->repr($this->getTemplateLine())
             ->raw(')');
     }
 
-    protected function addTemplateArguments(Twig_Compiler $compiler)
+    protected function addTemplateArguments(Compiler $compiler)
     {
+        $slot = $compiler->getVarName();
 
-        $compiler->raw('array_merge(["slot"=>$slot],');
+        $compiler
+            ->write("ob_start();\n")
+            ->subcompile($this->getNode('body'))
+            ->write(sprintf("$%s = ob_get_clean();\n", $slot));
+
+        $compiler->raw(sprintf("array_merge(['slot'=>$%s],", $slot));
 
         if (!$this->hasNode('variables')) {
-            $compiler->raw(false === $this->getAttribute('only') ? '$context' : 'array()');
+            $compiler->raw(false === $this->getAttribute('only') ? '$context' : '[]');
         } elseif (false === $this->getAttribute('only')) {
             $compiler
-                ->raw('$context, ')
-                ->subcompile($this->getNode('variables'));
+                ->raw('twig_array_merge($context, ')
+                ->subcompile($this->getNode('variables'))
+                ->raw(')');
         } else {
+            $compiler->raw('twig_to_array(');
             $compiler->subcompile($this->getNode('variables'));
+            $compiler->raw(')');
         }
 
         $compiler->raw(')');

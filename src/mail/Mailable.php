@@ -33,226 +33,56 @@ use yunwuxin\mail\twig\TokenParser\Component;
  *
  * @property string  $queue
  * @property integer $delay
+ * @property string  $connection
  */
 class Mailable
 {
     /** @var array 发信人 */
-    protected $from = [];
+    public $from = [];
 
     /** @var array 收信人 */
-    protected $to = [];
+    public $to = [];
 
     /** @var array 抄送 */
-    protected $cc = [];
+    public $cc = [];
 
     /** @var array 密送 */
-    protected $bcc = [];
+    public $bcc = [];
 
     /** @var array 回复人 */
-    protected $replyTo = [];
+    public $replyTo = [];
 
     /** @var string 标题 */
-    protected $subject;
+    public $subject;
 
     /** @var string 邮件内容(富文本) */
-    protected $view;
+    public $view;
 
     /** @var string 邮件内容(纯文本) */
-    protected $textView;
+    public $textView;
 
     /** @var string 邮件内容(MarkDown) */
-    protected $markdown;
+    public $markdown;
 
     /** @var array 动态数据 */
-    protected $viewData = [];
+    public $viewData = [];
 
     /** @var array 附件(文件名) */
-    protected $attachments = [];
+    public $attachments = [];
 
     /** @var array 附件(数据) */
-    protected $rawAttachments = [];
+    public $rawAttachments = [];
 
-    public function buildMessage(Message $message)
-    {
-        $this->build();
-
-        $this->buildContent($message)
-            ->buildFrom($message)
-            ->buildRecipients($message)
-            ->buildSubject($message)
-            ->buildAttachments($message)
-            ->afterBuild($message->getSwiftMessage());
-    }
+    public $callbacks = [];
 
     protected function build()
     {
         //...
     }
 
-    protected function afterBuild(\Swift_Message $message)
+    public function withSwiftMessage($callback)
     {
-        //...
-    }
-
-    /**
-     * 构造数据
-     * @param Message $message
-     * @return array
-     */
-    protected function buildViewData(Message $message)
-    {
-        $data = $this->viewData;
-
-        foreach ((new ReflectionClass($this))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
-            $data[$property->getName()] = $property->getValue($this);
-        }
-
-        $data['message'] = $message;
-
-        return $data;
-    }
-
-    /**
-     * 添加内容
-     * @param Message $message
-     * @return $this
-     */
-    protected function buildContent(Message $message)
-    {
-        $data = $this->buildViewData($message);
-
-        if (isset($this->view)) {
-            $message->setBody($this->fetchView($this->view, $data), 'text/html');
-        } elseif (isset($this->textView)) {
-            $method = isset($this->view) ? 'addPart' : 'setBody';
-
-            $message->$method($this->fetchView($this->textView, $data), 'text/plain');
-        } elseif (isset($this->markdown)) {
-
-            $html = $this->parseDown($this->markdown, $data);
-
-            $html = (new CssToInlineStyles())->convert($html, file_get_contents(__DIR__ . '/resource/css/default.css'));
-
-            $message->setBody($html, 'text/html');
-        }
-        return $this;
-    }
-
-    protected function buildTwigLoader()
-    {
-        $viewPath = Config::get('template.view_path') ?: Env::get('app_path') . 'view' . DIRECTORY_SEPARATOR;
-
-        $loader = new Loader($viewPath);
-
-        $loader->addPath(__DIR__ . '/resource/view', 'mail');
-
-        return $loader;
-    }
-
-    /**
-     * 解析markdown
-     * @param $view
-     * @param $data
-     * @return string
-     */
-    protected function parseDown($view, $data)
-    {
-        $path = Env::get('runtime_path') . 'temp';
-        if (!is_dir($path)) {
-            if (!mkdir($path, 0755, true)) {
-                throw new RuntimeException('Can not make the cache dir!');
-            }
-        }
-
-        $loader = $this->buildTwigLoader();
-
-        $twig = new Twig_Environment($loader, [
-            'debug'            => App::isDebug(),
-            'auto_reload'      => App::isDebug(),
-            'cache'            => $path,
-            'strict_variables' => true,
-        ]);
-
-        $twig->registerUndefinedFunctionCallback(function ($name) {
-            if (function_exists($name)) {
-                return new Twig_SimpleFunction($name, $name);
-            }
-
-            return false;
-        });
-
-        $twig->addFilter(new Twig_SimpleFilter('markdown', function ($content) {
-            $parser        = new Markdown();
-            $parser->html5 = true;
-            return $parser->parse($content);
-        }));
-
-        $twig->addTokenParser(new Component());
-
-        return $twig->render($view . '.twig', $data);
-    }
-
-    /**
-     * 构造发信人
-     * @param Message $message
-     * @return $this
-     */
-    protected function buildFrom(Message $message)
-    {
-        if (!empty($this->from)) {
-            $message->from($this->from[0]['address'], $this->from[0]['name']);
-        }
-        return $this;
-    }
-
-    /**
-     * 构造收信人
-     * @param $message
-     * @return $this
-     */
-    protected function buildRecipients(Message $message)
-    {
-        foreach (['to', 'cc', 'bcc', 'replyTo'] as $type) {
-            foreach ($this->{$type} as $recipient) {
-                $message->{$type}($recipient['address'], $recipient['name']);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * 构造标题
-     * @param Message $message
-     * @return $this
-     */
-    protected function buildSubject(Message $message)
-    {
-        if ($this->subject) {
-            $message->subject($this->subject);
-        } else {
-            $message->subject(Str::title(Str::snake(class_basename($this), ' ')));
-        }
-
-        return $this;
-    }
-
-    /**
-     * 构造附件
-     * @param Message $message
-     * @return $this
-     */
-    protected function buildAttachments(Message $message)
-    {
-        foreach ($this->attachments as $attachment) {
-            $message->attach($attachment['file'], $attachment['options']);
-        }
-
-        foreach ($this->rawAttachments as $attachment) {
-            $message->attachData(
-                $attachment['data'], $attachment['name'], $attachment['options']
-            );
-        }
+        $this->callbacks[] = $callback;
 
         return $this;
     }
@@ -315,9 +145,9 @@ class Mailable
     /**
      * 设置地址
      *
-     * @param  object|array|string $address
-     * @param  string|null         $name
-     * @param  string              $property
+     * @param object|array|string $address
+     * @param string|null         $name
+     * @param string              $property
      * @return $this
      */
     protected function setAddress($address, $name = null, $property = 'to')
@@ -353,17 +183,6 @@ class Mailable
         }
 
         return $user;
-    }
-
-    /**
-     * 调用模板引擎渲染模板
-     * @param $view
-     * @param $data
-     * @return string
-     */
-    protected function fetchView($view, $data)
-    {
-        return View::init(Config::pull('template'), Config::get('view_replace_str'))->fetch($view, $data);
     }
 
     /**

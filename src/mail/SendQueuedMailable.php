@@ -11,7 +11,7 @@
 
 namespace yunwuxin\mail;
 
-use yunwuxin\Mail;
+use yunwuxin\facade\Mail;
 
 class SendQueuedMailable
 {
@@ -23,8 +23,13 @@ class SendQueuedMailable
         $this->mailable = $mailable;
     }
 
-    public function handle()
+    public function handle(Mail $mail)
     {
-        Mail::sendNow($this->mailable);
+        $mail->sendNow($this->mailable);
+    }
+
+    public function __clone()
+    {
+        $this->mailable = clone $this->mailable;
     }
 }

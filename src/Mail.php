@@ -2,7 +2,7 @@
 // +----------------------------------------------------------------------
 // | ThinkPHP [ WE CAN DO IT JUST THINK IT ]
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006-2016 http://thinkphp.cn All rights reserved.
+// | Copyright (c) 2006-2019 http://thinkphp.cn All rights reserved.
 // +----------------------------------------------------------------------
 // | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
 // +----------------------------------------------------------------------
@@ -10,43 +10,24 @@
 // +----------------------------------------------------------------------
 namespace yunwuxin;
 
-use InvalidArgumentException;
 use Swift_Mailer;
-use Swift_MailTransport;
 use Swift_SendmailTransport;
 use Swift_SmtpTransport;
-use think\Config;
-use think\helper\Str;
-use yunwuxin\mail\Mailable;
+use think\Manager;
 use yunwuxin\mail\Mailer;
 
 /**
  * Class Mail
  *
  * @package yunwuxin
- * @method Mailer to($users)
- * @method Mailer cc($users)
- * @method Mailer bcc($users)
- * @method void send(Mailable $mailable)
- * @method void sendNow(Mailable $mailable)
- * @method void queue(Mailable $mailable)
+ * @mixin Mailer
  */
-class Mail
+class Mail extends Manager
 {
 
-    /** @var Mailer */
-    protected $mailer;
-
-    protected $config;
-
-    public function __construct($config)
+    protected function createSmtpDriver($config)
     {
-        $this->config = $config;
-    }
-
-    protected function buildSmtpTransport($config)
-    {
-        $transport = Swift_SmtpTransport::newInstance($config['host'], $config['port']);
+        $transport = new Swift_SmtpTransport($config['host'], $config['port']);
         if (isset($config['encryption'])) {
             $transport->setEncryption($config['encryption']);
         }
@@ -63,47 +44,35 @@ class Mail
         return $transport;
     }
 
-    protected function buildSendmailTransport($config)
+    protected function createSendmailDriver($config)
     {
-        return Swift_SendmailTransport::newInstance($config['command']);
+        return new Swift_SendmailTransport($config['command']);
     }
 
-    protected function buildMailTransport($config)
+    protected function resolveConfig(string $name)
     {
-        return Swift_MailTransport::newInstance();
+        return $this->app->config->get("mail.{$name}");
     }
 
-    protected function buildMailer()
+    protected function createDriver(string $name)
     {
-        if (!$this->mailer) {
-            $config = $this->config;
+        $transport = parent::createDriver($name);
+        $swift     = new Swift_Mailer($transport);
 
-            $method = 'build' . Str::studly($config['transport']) . 'Transport';
+        /** @var Mailer $mailer */
+        $mailer = $this->app->invokeClass(Mailer::class, [$swift]);
 
-            if (method_exists(self::class, $method)) {
-                $transport = self::$method($config);
-            } else {
-                $className = false !== strpos($config['transport'], '\\') ? $config['transport'] : "\\yunwuxin\\mail\\transport\\" . Str::studly($config['transport']);
-                if (class_exists($className)) {
-                    $transport = new $className($config);
-                } else {
-                    throw new InvalidArgumentException("Transport [{$config['transport']}] not supported.");
-                }
-            }
-            $swift        = Swift_Mailer::newInstance($transport);
-            $this->mailer = new Mailer($swift);
-        }
-        return $this->mailer;
+        $mailer->from($this->app->config->get('mail.from'));
+
+        return $mailer;
     }
 
-    public function __call($name, $arguments)
+    /**
+     * 默认驱动
+     * @return string|null
+     */
+    public function getDefaultDriver()
     {
-        return call_user_func_array([$this->buildMailer(), $name], $arguments);
+        return $this->app->config->get('mail.type');
     }
-
-    public static function __make(Config $config)
-    {
-        return new self($config->pull('mail'));
-    }
-
 }

@@ -2,69 +2,60 @@
 
 namespace yunwuxin\mail\twig\TokenParser;
 
-use Twig_NodeInterface;
-use Twig_Token;
-use Twig_TokenParser;
+use Twig\Token;
+use Twig\TokenParser\AbstractTokenParser;
+use Twig\TokenStream;
+use yunwuxin\mail\twig\Node\Component as ComponentNode;
 
-class Component extends Twig_TokenParser
+class Component extends AbstractTokenParser
 {
 
     /**
-     * Parses a token and returns a node.
-     *
-     * @param Twig_Token $token
-     * @return Twig_NodeInterface
+     * @param Token $token
+     * @return ComponentNode
      */
-    public function parse(Twig_Token $token)
+    public function parse(Token $token)
     {
         $expr = $this->parser->getExpressionParser()->parseExpression();
 
-        list($variables, $only, $ignoreMissing) = $this->parseArguments();
-
         $stream = $this->parser->getStream();
 
-        $body = $this->parser->subparse([$this, 'decideBlockEnd'], true);
-        $stream->expect(Twig_Token::BLOCK_END_TYPE);
+        list($variables, $only, $ignoreMissing) = $this->parseArguments($stream);
 
-        return new \yunwuxin\mail\twig\Node\Component($body, $expr, $variables, $only, $ignoreMissing, $token->getLine(), $this->getTag());
+        $stream->expect(Token::BLOCK_END_TYPE);
+        $body = $this->parser->subparse([$this, 'decideBlockEnd'], true);
+        $stream->expect(Token::BLOCK_END_TYPE);
+
+        return new ComponentNode($body, $expr, $variables, $only, $ignoreMissing, $token->getLine(), $this->getTag());
     }
 
-    public function decideBlockEnd(Twig_Token $token)
+    public function decideBlockEnd(Token $token)
     {
         return $token->test('endcomponent');
     }
 
-    protected function parseArguments()
+    protected function parseArguments(TokenStream $stream)
     {
-        $stream = $this->parser->getStream();
-
         $ignoreMissing = false;
-        if ($stream->nextIf(Twig_Token::NAME_TYPE, 'ignore')) {
-            $stream->expect(Twig_Token::NAME_TYPE, 'missing');
+        if ($stream->nextIf(Token::NAME_TYPE, 'ignore')) {
+            $stream->expect(Token::NAME_TYPE, 'missing');
 
             $ignoreMissing = true;
         }
 
         $variables = null;
-        if ($stream->nextIf(Twig_Token::NAME_TYPE, 'with')) {
+        if ($stream->nextIf(Token::NAME_TYPE, 'with')) {
             $variables = $this->parser->getExpressionParser()->parseExpression();
         }
 
         $only = false;
-        if ($stream->nextIf(Twig_Token::NAME_TYPE, 'only')) {
+        if ($stream->nextIf(Token::NAME_TYPE, 'only')) {
             $only = true;
         }
-
-        $stream->expect(Twig_Token::BLOCK_END_TYPE);
 
         return [$variables, $only, $ignoreMissing];
     }
 
-    /**
-     * Gets the tag name associated with this token parser.
-     *
-     * @return string The tag name
-     */
     public function getTag()
     {
         return 'component';

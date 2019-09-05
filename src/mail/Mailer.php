@@ -10,8 +10,8 @@
 // +----------------------------------------------------------------------
 namespace yunwuxin\mail;
 
-use Swift_Message;
-use think\facade\Config;
+use Swift_Mailer;
+use think\Container;
 use think\Queue;
 use think\queue\Queueable;
 use think\queue\ShouldQueue;
@@ -19,8 +19,11 @@ use think\queue\ShouldQueue;
 class Mailer
 {
 
-    /** @var  \Swift_Mailer */
+    /** @var  Swift_Mailer */
     protected $swift;
+
+    /** @var array 发信人 */
+    protected $from;
 
     /** @var array 收信人 */
     protected $to = [];
@@ -34,9 +37,22 @@ class Mailer
     /** @var array 发送失败的地址 */
     protected $failedRecipients = [];
 
-    public function __construct(\Swift_Mailer $swift)
+    /** @var Queue */
+    protected $queue;
+
+    /** @var Container */
+    protected $container;
+
+    public function __construct(Swift_Mailer $swift, Queue $queue, Container $container)
     {
-        $this->swift = $swift;
+        $this->swift     = $swift;
+        $this->queue     = $queue;
+        $this->container = $container;
+    }
+
+    public function from($users)
+    {
+        $this->from = $users;
     }
 
     public function to($users)
@@ -93,9 +109,7 @@ class Mailer
             $message->bcc($this->bcc);
         }
 
-        $message = $message->getSwiftMessage();
-
-        $this->sendSwiftMessage($message);
+        $this->sendMessage($message);
     }
 
     /**
@@ -107,13 +121,14 @@ class Mailer
         $job = new SendQueuedMailable($mailable);
 
         if (in_array(Queueable::class, class_uses_recursive($mailable))) {
+            $queue = $this->queue->connection($mailable->connection);
             if ($mailable->delay > 0) {
-                Queue::later($mailable->delay, $job, '', $mailable->queue);
+                $queue->later($mailable->delay, $job, '', $mailable->queue);
             } else {
-                Queue::push($job, '', $mailable->queue);
+                $queue->push($job, '', $mailable->queue);
             }
         } else {
-            Queue::push($job);
+            $this->queue->push($job);
         }
     }
 
@@ -133,27 +148,22 @@ class Mailer
      */
     protected function createMessage(Mailable $mailable)
     {
-        $message = new Message(new Swift_Message);
-
-        $from = Config::get('mail.from');
-        if (!empty($from['address'])) {
-            $message->from($from['address'], $from['name']);
+        if (!empty($this->from['address'])) {
+            $mailable->from($this->from['address'], $this->from['name']);
         }
 
-        $mailable->buildMessage($message);
-
-        return $message;
+        return $this->container->invokeClass(Message::class, [$mailable]);
     }
 
     /**
      * 发送Message
-     * @param $message
+     * @param Message $message
      * @return mixed
      */
-    protected function sendSwiftMessage($message)
+    protected function sendMessage($message)
     {
         try {
-            return $this->swift->send($message, $this->failedRecipients);
+            return $this->swift->send($message->getSwiftMessage(), $this->failedRecipients);
         } finally {
             $this->swift->getTransport()->stop();
         }

@@ -1,19 +1,13 @@
 {
     "name": "yunwuxin/think-mail",
-    "description": "The Mailer Library For ThinkPHP5",
-    "type": "think-extend",
+    "description": "The Mailer Library For ThinkPHP6",
     "require": {
-        "topthink/think-installer": "^2.0",
-        "swiftmailer/swiftmailer": "^5.4",
-        "guzzlehttp/guzzle": "^6.2",
-        "topthink/think-helper": "^1.0",
-        "topthink/think-queue": "^2.0",
+        "swiftmailer/swiftmailer": "^6.2",
+        "topthink/think-queue": "^3.0",
         "cebe/markdown": "^1.1",
-        "yunwuxin/think-twig": "^2.0",
-        "tijsverkoyen/css-to-inline-styles": "^2.2"
-    },
-    "require-dev": {
-        "topthink/framework": "5.1.x-dev"
+        "yunwuxin/think-twig": "^3.0",
+        "tijsverkoyen/css-to-inline-styles": "^2.2",
+        "topthink/framework": "^6.0"
     },
     "license": "Apache-2.0",
     "authors": [
@@ -27,9 +21,12 @@
             "yunwuxin\\": "src"
         }
     },
+    "minimum-stability": "dev",
     "extra": {
-        "think-config": {
-            "mail": "src/config.php"
+        "think": {
+            "config": {
+                "mail": "src/config.php"
+            }
         }
     }
 }

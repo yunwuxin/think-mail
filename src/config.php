@@ -10,14 +10,19 @@
 // +----------------------------------------------------------------------
 
 return [
-    'transport'  => 'smtp', //smtp sendmail mail log sendcloud
-    'host'       => 'mail.example.com',
-    'port'       => 25,
-    'encryption' => 'tls',
-    'username'   => 'username',
-    'password'   => 'password',
-    'from'       => [
+    'type'     => 'smtp', //smtp sendmail
+    'from'     => [
         'address' => 'example@example',
-        'name'    => 'App Name'
-    ]
+        'name'    => 'App Name',
+    ],
+    'smtp'     => [
+        'host'       => 'mail.example.com',
+        'port'       => 25,
+        'encryption' => 'tls',
+        'username'   => 'username',
+        'password'   => 'password',
+    ],
+    'sendmail' => [
+        'command' => '/usr/sbin/sendmail -bs',
+    ],
 ];
