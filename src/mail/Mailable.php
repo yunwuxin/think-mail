@@ -11,21 +11,7 @@
 
 namespace yunwuxin\mail;
 
-use ReflectionClass;
-use ReflectionProperty;
-use RuntimeException;
 use think\Collection;
-use think\facade\App;
-use think\facade\Config;
-use think\facade\Env;
-use think\facade\View;
-use think\helper\Str;
-use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
-use Twig_Environment;
-use Twig_SimpleFilter;
-use Twig_SimpleFunction;
-use yunwuxin\mail\twig\Loader;
-use yunwuxin\mail\twig\TokenParser\Component;
 
 /**
  * Class Mailable
@@ -74,6 +60,8 @@ class Mailable
     public $rawAttachments = [];
 
     public $callbacks = [];
+
+    public $markdownCallback = null;
 
     protected function build()
     {
@@ -225,10 +213,11 @@ class Mailable
         return $this;
     }
 
-    public function markdown($markdown, array $data = [])
+    public function markdown($markdown, array $data = [], $callback = null)
     {
-        $this->markdown = $markdown;
-        $this->viewData = $data;
+        $this->markdown         = $markdown;
+        $this->viewData         = $data;
+        $this->markdownCallback = $callback;
 
         return $this;
     }

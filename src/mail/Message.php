@@ -11,6 +11,7 @@
 
 namespace yunwuxin\mail;
 
+use Closure;
 use ReflectionClass;
 use ReflectionProperty;
 use Swift_Attachment;
@@ -41,9 +42,6 @@ class Message
 
     /** @var App */
     protected $app;
-
-    /** @var Twig */
-    protected $twig;
 
     public function __construct(Mailable $mailable, View $view, App $app)
     {
@@ -97,7 +95,7 @@ class Message
 
         if (isset($mailable->markdown)) {
 
-            $html = $this->parseDown($mailable->markdown, $data);
+            $html = $this->parseDown($mailable->markdown, $data, $mailable->markdownCallback);
 
             $html = (new CssToInlineStyles())->convert($html, file_get_contents(__DIR__ . '/resource/css/default.css'));
 
@@ -114,36 +112,34 @@ class Message
         return $this;
     }
 
-    protected function getTwig()
-    {
-        if (!$this->twig) {
-            $config = $this->app->config->get('template', []);
-
-            $this->twig = new Twig($this->app, $config);
-
-            $this->twig->getTwig()->addFilter(new TwigFilter('markdown', function ($content) {
-                $parser        = new Markdown();
-                $parser->html5 = true;
-                return $parser->parse($content);
-            }));
-
-            $this->twig->getTwig()->addTokenParser(new Component());
-
-            $this->twig->getLoader()->addPath(__DIR__ . '/resource/view', 'mail');
-        }
-
-        return $this->twig;
-    }
-
     /**
      * 解析markdown
-     * @param $view
-     * @param $data
+     * @param         $view
+     * @param         $data
+     * @param Closure $callback
      * @return string
      */
-    protected function parseDown($view, $data)
+    protected function parseDown($view, $data, Closure $callback = null)
     {
-        return $this->getTwig()->getTwig()->render($view . '.twig', $data);
+        $config = $this->app->config->get('template', []);
+
+        $twig = new Twig($this->app, $config);
+
+        $twig->getTwig()->addFilter(new TwigFilter('markdown', function ($content) {
+            $parser        = new Markdown();
+            $parser->html5 = true;
+            return $parser->parse($content);
+        }));
+
+        $twig->getTwig()->addTokenParser(new Component());
+
+        $twig->getLoader()->addPath(__DIR__ . '/resource/view', 'mail');
+
+        if ($callback) {
+            $callback($twig);
+        }
+
+        return $twig->getTwig()->render($view . '.twig', $data);
     }
 
     /**

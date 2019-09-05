@@ -95,7 +95,6 @@ class Mailer
      */
     public function sendNow(Mailable $mailable)
     {
-
         $message = $this->createMessage($mailable);
 
         if (isset($this->to['address'])) {
