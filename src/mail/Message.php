@@ -18,7 +18,7 @@ use Swift_Attachment;
 use Swift_Image;
 use Swift_Message;
 use Swift_Mime_Attachment;
-use think\facade\App;
+use think\App;
 use think\helper\Str;
 use think\View;
 use think\view\driver\Twig;
