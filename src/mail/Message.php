@@ -57,11 +57,11 @@ class Message
         $this->app->invoke([$mailable, 'build']);
 
         $this->buildContent($mailable)
-            ->buildFrom($mailable)
-            ->buildRecipients($mailable)
-            ->buildSubject($mailable)
-            ->runCallbacks($mailable)
-            ->buildAttachments($mailable);
+             ->buildFrom($mailable)
+             ->buildRecipients($mailable)
+             ->buildSubject($mailable)
+             ->runCallbacks($mailable)
+             ->buildAttachments($mailable);
     }
 
     /**
@@ -121,9 +121,8 @@ class Message
      */
     protected function parseDown($view, $data, Closure $callback = null)
     {
-        $config = $this->app->config->get('template', []);
-
-        $twig = new Twig($this->app, $config);
+        /** @var Twig $twig */
+        $twig = $this->view->engine('twig');
 
         $twig->getTwig()->addFilter(new TwigFilter('markdown', function ($content) {
             $parser        = new Markdown();
@@ -237,7 +236,7 @@ class Message
      * Add a "from" address to the message.
      *
      * @param string|array $address
-     * @param string|null  $name
+     * @param string|null $name
      * @return $this
      */
     public function from($address, $name = null)
@@ -251,7 +250,7 @@ class Message
      * Set the "sender" of the message.
      *
      * @param string|array $address
-     * @param string|null  $name
+     * @param string|null $name
      * @return $this
      */
     public function sender($address, $name = null)
@@ -278,8 +277,8 @@ class Message
      * Add a recipient to the message.
      *
      * @param string|array $address
-     * @param string|null  $name
-     * @param bool         $override
+     * @param string|null $name
+     * @param bool $override
      * @return $this
      */
     public function to($address, $name = null, $override = false)
@@ -297,7 +296,7 @@ class Message
      * Add a carbon copy to the message.
      *
      * @param string|array $address
-     * @param string|null  $name
+     * @param string|null $name
      * @return $this
      */
     public function cc($address, $name = null)
@@ -309,7 +308,7 @@ class Message
      * Add a blind carbon copy to the message.
      *
      * @param string|array $address
-     * @param string|null  $name
+     * @param string|null $name
      * @return $this
      */
     public function bcc($address, $name = null)
@@ -321,7 +320,7 @@ class Message
      * Add a reply to address to the message.
      *
      * @param string|array $address
-     * @param string|null  $name
+     * @param string|null $name
      * @return $this
      */
     public function replyTo($address, $name = null)
@@ -333,8 +332,8 @@ class Message
      * Add a recipient to the message.
      *
      * @param string|array $address
-     * @param string       $name
-     * @param string       $type
+     * @param string $name
+     * @param string $type
      * @return $this
      */
     protected function addAddresses($address, $name, $type)
@@ -378,7 +377,7 @@ class Message
      * Attach a file to the message.
      *
      * @param string $file
-     * @param array  $options
+     * @param array $options
      * @return $this
      */
     public function attach($file, array $options = [])
@@ -404,7 +403,7 @@ class Message
      *
      * @param string $data
      * @param string $name
-     * @param array  $options
+     * @param array $options
      * @return $this
      */
     public function attachData($data, $name, array $options = [])
@@ -440,8 +439,8 @@ class Message
     /**
      * Embed in-memory data in the message and get the CID.
      *
-     * @param string      $data
-     * @param string      $name
+     * @param string $data
+     * @param string $name
      * @param string|null $contentType
      * @return string
      */
@@ -456,7 +455,7 @@ class Message
      * Prepare and attach the given attachment.
      *
      * @param Swift_Mime_Attachment $attachment
-     * @param array                 $options
+     * @param array $options
      * @return $this
      */
     protected function prepAttachment($attachment, $options = [])
@@ -489,7 +488,7 @@ class Message
      * Dynamically pass missing methods to the Swift instance.
      *
      * @param string $method
-     * @param array  $parameters
+     * @param array $parameters
      * @return mixed
      */
     public function __call($method, $parameters)
