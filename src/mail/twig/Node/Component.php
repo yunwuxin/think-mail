@@ -61,7 +61,6 @@ class Component extends Node
 
     protected function addGetTemplate(Compiler $compiler)
     {
-        var_dump($this->getNode('expr'));
         $compiler
             ->write('$this->loadTemplate(')
             ->subcompile($this->getNode('expr'))

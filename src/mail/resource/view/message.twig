@@ -1,8 +1,8 @@
 {% extends "@mail/layout.twig" %}
 
 {% block header %}
-    {% component "@mail/header" with { url: app_url??'#' } %}
-        {{ app_name??'App Name' }}
+    {% component "@mail/header" with { url: config('app.url') } %}
+        {{ config('app.name') }}
     {% endcomponent %}
 {% endblock %}
 
@@ -12,6 +12,6 @@
 
 {% block footer %}
     {% component "@mail/footer" %}
-        © {{ 'now'|date('Y') }} {{ app_name??'App Name' }}. All rights reserved.
+        © {{ 'now'|date('Y') }} {{ config('app.name') }}. All rights reserved.
     {% endcomponent %}
 {% endblock %}
