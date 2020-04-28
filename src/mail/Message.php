@@ -124,9 +124,11 @@ class Message
         /** @var Twig $twig */
         $twig = $this->view->engine('twig');
 
-        $twig->getTwig()->addFilter(new TwigFilter('markdown', function ($content) {
-            $parser        = new Markdown();
-            $parser->html5 = true;
+        $parser        = new Markdown();
+        $parser->html5 = true;
+
+        $twig->getTwig()->addFilter(new TwigFilter('markdown', function ($content) use ($parser) {
+            $content = preg_replace('/^[^\S\n]+/m', '', $content);
             return $parser->parse($content);
         }));
 
