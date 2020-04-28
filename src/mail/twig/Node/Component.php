@@ -8,7 +8,7 @@ use Twig\Node\Node;
 
 class Component extends Node
 {
-    public function __construct(Node $body, AbstractExpression $expr, AbstractExpression $variables, $only = false, $ignoreMissing = false, $lineno = 0, $tag = null)
+    public function __construct(Node $body, AbstractExpression $expr, AbstractExpression $variables = null, $only = false, $ignoreMissing = false, $lineno = 0, $tag = null)
     {
         $nodes = ['expr' => $expr, 'body' => $body];
         if (null !== $variables) {
@@ -21,6 +21,8 @@ class Component extends Node
     public function compile(Compiler $compiler)
     {
         $compiler->addDebugInfo($this);
+
+        $this->addTemplateArguments($compiler);
 
         if ($this->getAttribute('ignore_missing')) {
 
@@ -44,22 +46,22 @@ class Component extends Node
                 ->write("}\n")
                 ->write(sprintf("if ($%s) {\n", $template))
                 ->indent()
-                ->write(sprintf('$%s->display(', $template));
-            $this->addTemplateArguments($compiler);
+                ->write(sprintf('$%s->display($context', $template));
+
             $compiler
                 ->raw(");\n")
                 ->outdent()
                 ->write("}\n");
         } else {
             $this->addGetTemplate($compiler);
-            $compiler->raw('->display(');
-            $this->addTemplateArguments($compiler);
-            $compiler->raw(");\n");
+            $compiler->raw('->display($context);');
+            $compiler->raw("\n");
         }
     }
 
     protected function addGetTemplate(Compiler $compiler)
     {
+        var_dump($this->getNode('expr'));
         $compiler
             ->write('$this->loadTemplate(')
             ->subcompile($this->getNode('expr'))
@@ -72,28 +74,26 @@ class Component extends Node
 
     protected function addTemplateArguments(Compiler $compiler)
     {
-        $slot = $compiler->getVarName();
+        if (!$this->hasNode('variables')) {
+            if (false !== $this->getAttribute('only')) {
+                $compiler->write('$context = [];');
+            }
+        } elseif (false === $this->getAttribute('only')) {
+            $compiler
+                ->write('$context = twig_array_merge($context, ')
+                ->subcompile($this->getNode('variables'))
+                ->raw(');');
+        } else {
+            $compiler->write('$context = twig_to_array(');
+            $compiler->subcompile($this->getNode('variables'));
+            $compiler->raw(');');
+        }
+        $compiler->raw("\n");
 
         $compiler
             ->write("ob_start();\n")
             ->subcompile($this->getNode('body'))
-            ->write(sprintf("$%s = ob_get_clean();\n", $slot));
-
-        $compiler->raw(sprintf("array_merge(['slot'=>$%s],", $slot));
-
-        if (!$this->hasNode('variables')) {
-            $compiler->raw(false === $this->getAttribute('only') ? '$context' : '[]');
-        } elseif (false === $this->getAttribute('only')) {
-            $compiler
-                ->raw('twig_array_merge($context, ')
-                ->subcompile($this->getNode('variables'))
-                ->raw(')');
-        } else {
-            $compiler->raw('twig_to_array(');
-            $compiler->subcompile($this->getNode('variables'));
-            $compiler->raw(')');
-        }
-
-        $compiler->raw(')');
+            ->write('$context["slot"] = ob_get_clean();')
+            ->raw("\n");
     }
 }
