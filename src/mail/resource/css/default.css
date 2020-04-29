@@ -19,6 +19,7 @@ body {
     -webkit-text-size-adjust: none;
     word-break: break-all;
     word-break: break-word;
+    font-size: 14px;
 }
 
 p,
@@ -65,8 +66,8 @@ h3 {
 
 p {
     color: #74787E;
-    font-size: 16px;
-    line-height: 1.5em;
+    font-size: 14px;
+    line-height: 1.4;
     margin-top: 0;
     text-align: left;
 }
@@ -238,6 +239,21 @@ img {
     border-right: 18px solid #bf5329;
     border-bottom: 10px solid #bf5329;
     border-left: 18px solid #bf5329;
+}
+
+.code {
+    padding: 10px 18px 10px 18px;
+    border-radius: 3px;
+    text-align: center;
+    text-decoration: none;
+    background-color: #ecf4fb;
+    color: #4581E9;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin: 0;
+    white-space: nowrap;
+    line-height: 1.7;
 }
 
 /* Panels */
