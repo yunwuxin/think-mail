@@ -15,6 +15,9 @@ use think\Facade;
  *
  * @package yunwuxin\facade
  * @mixin \yunwuxin\Mail
+ * @method void send(\yunwuxin\mail\Mailable $mailable) static
+ * @method void sendNow(\yunwuxin\mail\Mailable $mailable) static
+ * @method void queue(\yunwuxin\mail\Mailable $mailable) static
  */
 class Mail extends Facade
 {
