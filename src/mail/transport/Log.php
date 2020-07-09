@@ -30,7 +30,7 @@ class Log extends Transport
      */
     public function send(Swift_Mime_Message $message, &$failedRecipients = null)
     {
-        \think\Log::write($this->getMimeEntityString($message), 'debug');
+        \think\facade\Log::write($this->getMimeEntityString($message), 'debug');
         return $this->numberOfRecipients($message);
     }
 
