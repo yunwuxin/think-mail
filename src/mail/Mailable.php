@@ -141,8 +141,11 @@ class Mailable
     protected function buildTwigLoader()
     {
         $viewPath = Config::get('template.view_path') ?: Env::get('app_path') . 'view' . DIRECTORY_SEPARATOR;
-
-        $loader = new Loader($viewPath);
+        if (is_dir($viewPath)) { //新加判断 目录不存在的话，不加入模板目录集合里
+            $loader = new Loader($viewPath);
+        } else {
+            $loader = new Loader();
+        }
 
         $loader->addPath(__DIR__ . '/resource/view', 'mail');
 
@@ -250,7 +253,9 @@ class Mailable
 
         foreach ($this->rawAttachments as $attachment) {
             $message->attachData(
-                $attachment['data'], $attachment['name'], $attachment['options']
+                $attachment['data'],
+                $attachment['name'],
+                $attachment['options']
             );
         }
 
