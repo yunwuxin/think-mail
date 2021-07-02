@@ -140,7 +140,12 @@ class Message
             $callback($twig);
         }
 
-        return $twig->getTwig()->render($view . '.twig', $data);
+        $content = $twig->getTwig()->render($view . '.twig', $data);
+
+        //清理
+        $this->view->forgetDriver('twig');
+
+        return $content;
     }
 
     /**
