@@ -11,7 +11,7 @@
 namespace yunwuxin\mail;
 
 use Swift_Mailer;
-use think\Container;
+use think\App;
 use think\Queue;
 use think\queue\Queueable;
 use think\queue\ShouldQueue;
@@ -40,14 +40,14 @@ class Mailer
     /** @var Queue */
     protected $queue;
 
-    /** @var Container */
-    protected $container;
+    /** @var App */
+    protected $app;
 
-    public function __construct(Swift_Mailer $swift, Queue $queue, Container $container)
+    public function __construct(Swift_Mailer $swift, Queue $queue, App $app)
     {
-        $this->swift     = $swift;
-        $this->queue     = $queue;
-        $this->container = $container;
+        $this->swift = $swift;
+        $this->queue = $queue;
+        $this->app   = $app;
     }
 
     public function from($users)
@@ -151,7 +151,7 @@ class Mailer
             $mailable->from($this->from['address'], $this->from['name']);
         }
 
-        return $this->container->invokeClass(Message::class, [$mailable]);
+        return $this->app->invokeClass(Message::class, [$mailable]);
     }
 
     /**

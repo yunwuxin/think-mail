@@ -54,7 +54,7 @@ class Message
 
     protected function build(Mailable $mailable)
     {
-        $this->app->invoke([$mailable, 'build']);
+        $this->app->invoke([$mailable, 'build'], [], true);
 
         $this->buildContent($mailable)
              ->buildFrom($mailable)
@@ -97,7 +97,9 @@ class Message
 
             $html = $this->parseDown($mailable->markdown, $data, $mailable->markdownCallback);
 
-            $html = (new CssToInlineStyles())->convert($html, file_get_contents(__DIR__ . '/resource/css/default.css'));
+            $css = $this->app->config->get('mail.css', __DIR__ . '/resource/css/default.css');
+
+            $html = (new CssToInlineStyles())->convert($html, file_get_contents($css));
 
             $this->setBody($html, 'text/html');
         } else {
@@ -116,7 +118,7 @@ class Message
      * 解析markdown
      * @param         $view
      * @param         $data
-     * @param Closure $callback
+     * @param Closure|null $callback
      * @return string
      */
     protected function parseDown($view, $data, Closure $callback = null)

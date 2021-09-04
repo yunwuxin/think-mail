@@ -10,19 +10,23 @@
 // +----------------------------------------------------------------------
 
 return [
-    'type'     => 'smtp', //smtp sendmail
-    'from'     => [
+    'default'    => 'smtp',
+    'transports' => [
+        'smtp'     => [
+            'type'       => 'smtp',
+            'host'       => 'mail.example.com',
+            'port'       => 25,
+            'encryption' => 'tls',
+            'username'   => 'username',
+            'password'   => 'password',
+        ],
+        'sendmail' => [
+            'type'    => 'sendmail',
+            'command' => '/usr/sbin/sendmail -bs',
+        ],
+    ],
+    'from'       => [
         'address' => 'example@example',
         'name'    => 'App Name',
-    ],
-    'smtp'     => [
-        'host'       => 'mail.example.com',
-        'port'       => 25,
-        'encryption' => 'tls',
-        'username'   => 'username',
-        'password'   => 'password',
-    ],
-    'sendmail' => [
-        'command' => '/usr/sbin/sendmail -bs',
     ],
 ];
