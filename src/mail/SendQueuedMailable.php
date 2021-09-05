@@ -11,7 +11,7 @@
 
 namespace yunwuxin\mail;
 
-use yunwuxin\facade\Mail;
+use yunwuxin\Mail;
 
 class SendQueuedMailable
 {
