@@ -129,7 +129,7 @@ class Message
         $parser        = new Markdown();
         $parser->html5 = true;
 
-        $twig->getTwig()->addFilter(new TwigFilter('markdown', function ($content) use ($parser) {
+        $twig->getTwig()->addFilter(new TwigFilter('maildown', function ($content) use ($parser) {
             $content = preg_replace('/^[^\S\n]+/m', '', $content);
             return $parser->parse($content);
         }));
