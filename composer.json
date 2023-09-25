@@ -7,12 +7,12 @@
         "cebe/markdown": "^1.1",
         "yunwuxin/think-twig": "^3.0",
         "tijsverkoyen/css-to-inline-styles": "^2.2",
-        "topthink/framework": "^6.0||^8.0"
+        "topthink/framework": "^6.0|^8.0"
     },
     "require-dev": {
         "mikey179/vfsstream": "^1.6",
         "mockery/mockery": "^1.2",
-        "phpunit/phpunit": "^7.0||^8.0"
+        "phpunit/phpunit": "^7.0|^8.0"
     },
     "license": "Apache-2.0",
     "authors": [
