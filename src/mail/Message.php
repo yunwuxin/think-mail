@@ -14,10 +14,6 @@ namespace yunwuxin\mail;
 use Closure;
 use ReflectionClass;
 use ReflectionProperty;
-use Swift_Attachment;
-use Swift_Image;
-use Swift_Message;
-use Swift_Mime_Attachment;
 use think\App;
 use think\helper\Str;
 use think\View;
@@ -30,12 +26,12 @@ use yunwuxin\mail\twig\TokenParser\Component;
  * Class Message
  * @package yunwuxin\mail
  *
- * @method setBody($body, $contentType = null, $charset = null)
+ * @mixin \Nette\Mail\Message
  */
 class Message
 {
-    /** @var Swift_Message */
-    protected $swift;
+    /** @var \Nette\Mail\Message */
+    protected $mail;
 
     /** @var View */
     protected $view;
@@ -45,9 +41,9 @@ class Message
 
     public function __construct(Mailable $mailable, View $view, App $app)
     {
-        $this->swift = new Swift_Message();
-        $this->view  = $view;
-        $this->app   = $app;
+        $this->mail = new \Nette\Mail\Message();
+        $this->view = $view;
+        $this->app  = $app;
 
         $this->build($mailable);
     }
@@ -57,11 +53,11 @@ class Message
         $this->app->invoke([$mailable, 'build'], [], true);
 
         $this->buildContent($mailable)
-             ->buildFrom($mailable)
-             ->buildRecipients($mailable)
-             ->buildSubject($mailable)
-             ->runCallbacks($mailable)
-             ->buildAttachments($mailable);
+            ->buildFrom($mailable)
+            ->buildRecipients($mailable)
+            ->buildSubject($mailable)
+            ->runCallbacks($mailable)
+            ->buildAttachments($mailable);
     }
 
     /**
@@ -101,14 +97,14 @@ class Message
 
             $html = (new CssToInlineStyles())->convert($html, file_get_contents($css));
 
-            $this->setBody($html, 'text/html');
+            $this->setHtmlBody($html);
         } else {
             if (isset($mailable->view)) {
-                $this->setBody($this->fetchView($mailable->view, $data), 'text/html');
+                $this->setHtmlBody($this->fetchView($mailable->view, $data));
             } elseif (isset($mailable->textView)) {
                 $method = isset($mailable->view) ? 'addPart' : 'setBody';
 
-                $this->$method($this->fetchView($mailable->textView, $data), 'text/plain');
+                $this->$method($this->fetchView($mailable->textView, $data));
             }
         }
         return $this;
@@ -214,13 +210,11 @@ class Message
     protected function buildAttachments(Mailable $mailable)
     {
         foreach ($mailable->attachments as $attachment) {
-            $this->attach($attachment['file'], $attachment['options']);
+            $this->attach($attachment);
         }
 
         foreach ($mailable->rawAttachments as $attachment) {
-            $this->attachData(
-                $attachment['data'], $attachment['name'], $attachment['options']
-            );
+            $this->attach($attachment['name'], $attachment['data']);
         }
 
         return $this;
@@ -235,7 +229,7 @@ class Message
     protected function runCallbacks(Mailable $mailable)
     {
         foreach ($mailable->callbacks as $callback) {
-            $callback($this->getSwiftMessage());
+            $callback($this->mail);
         }
 
         return $this;
@@ -250,21 +244,7 @@ class Message
      */
     public function from($address, $name = null)
     {
-        $this->swift->setFrom($address, $name);
-
-        return $this;
-    }
-
-    /**
-     * Set the "sender" of the message.
-     *
-     * @param string|array $address
-     * @param string|null $name
-     * @return $this
-     */
-    public function sender($address, $name = null)
-    {
-        $this->swift->setSender($address, $name);
+        $this->mail->setFrom($address, $name);
 
         return $this;
     }
@@ -277,7 +257,7 @@ class Message
      */
     public function returnPath($address)
     {
-        $this->swift->setReturnPath($address);
+        $this->mail->setReturnPath($address);
 
         return $this;
     }
@@ -287,18 +267,13 @@ class Message
      *
      * @param string|array $address
      * @param string|null $name
-     * @param bool $override
      * @return $this
      */
-    public function to($address, $name = null, $override = false)
+    public function to($address, $name = null)
     {
-        if ($override) {
-            $this->swift->setTo($address, $name);
+        $this->mail->addTo($address, $name);
 
-            return $this;
-        }
-
-        return $this->addAddresses($address, $name, 'To');
+        return $this;
     }
 
     /**
@@ -310,7 +285,8 @@ class Message
      */
     public function cc($address, $name = null)
     {
-        return $this->addAddresses($address, $name, 'Cc');
+        $this->mail->addCc($address, $name);
+        return $this;
     }
 
     /**
@@ -322,7 +298,8 @@ class Message
      */
     public function bcc($address, $name = null)
     {
-        return $this->addAddresses($address, $name, 'Bcc');
+        $this->mail->addBcc($address, $name);
+        return $this;
     }
 
     /**
@@ -334,25 +311,7 @@ class Message
      */
     public function replyTo($address, $name = null)
     {
-        return $this->addAddresses($address, $name, 'ReplyTo');
-    }
-
-    /**
-     * Add a recipient to the message.
-     *
-     * @param string|array $address
-     * @param string $name
-     * @param string $type
-     * @return $this
-     */
-    protected function addAddresses($address, $name, $type)
-    {
-        if (is_array($address)) {
-            $this->swift->{"set{$type}"}($address, $name);
-        } else {
-            $this->swift->{"add{$type}"}($address, $name);
-        }
-
+        $this->mail->addReplyTo($address, $name);
         return $this;
     }
 
@@ -364,8 +323,7 @@ class Message
      */
     public function subject($subject)
     {
-        $this->swift->setSubject($subject);
-
+        $this->mail->setSubject($subject);
         return $this;
     }
 
@@ -377,8 +335,7 @@ class Message
      */
     public function priority($level)
     {
-        $this->swift->setPriority($level);
-
+        $this->mail->setPriority($level);
         return $this;
     }
 
@@ -386,111 +343,32 @@ class Message
      * Attach a file to the message.
      *
      * @param string $file
-     * @param array $options
      * @return $this
      */
-    public function attach($file, array $options = [])
+    public function attach($file, $content = null, $contentType = null)
     {
-        $attachment = $this->createAttachmentFromPath($file);
-
-        return $this->prepAttachment($attachment, $options);
-    }
-
-    /**
-     * Create a Swift Attachment instance.
-     *
-     * @param string $file
-     * @return Swift_Mime_Attachment
-     */
-    protected function createAttachmentFromPath($file)
-    {
-        return Swift_Attachment::fromPath($file);
-    }
-
-    /**
-     * Attach in-memory data as an attachment.
-     *
-     * @param string $data
-     * @param string $name
-     * @param array $options
-     * @return $this
-     */
-    public function attachData($data, $name, array $options = [])
-    {
-        $attachment = $this->createAttachmentFromData($data, $name);
-
-        return $this->prepAttachment($attachment, $options);
-    }
-
-    /**
-     * Create a Swift Attachment instance from data.
-     *
-     * @param string $data
-     * @param string $name
-     * @return Swift_Mime_Attachment
-     */
-    protected function createAttachmentFromData($data, $name)
-    {
-        return new Swift_Attachment($data, $name);
+        $this->mail->addAttachment($file, $content, $contentType);
+        return $this;
     }
 
     /**
      * Embed a file in the message and get the CID.
      *
      * @param string $file
-     * @return string
      */
-    public function embed($file)
+    public function embed($file, $content = null, $contentType = null)
     {
-        return $this->swift->embed(Swift_Image::fromPath($file));
-    }
-
-    /**
-     * Embed in-memory data in the message and get the CID.
-     *
-     * @param string $data
-     * @param string $name
-     * @param string|null $contentType
-     * @return string
-     */
-    public function embedData($data, $name, $contentType = null)
-    {
-        $image = new Swift_Image($data, $name, $contentType);
-
-        return $this->swift->embed($image);
-    }
-
-    /**
-     * Prepare and attach the given attachment.
-     *
-     * @param Swift_Mime_Attachment $attachment
-     * @param array $options
-     * @return $this
-     */
-    protected function prepAttachment($attachment, $options = [])
-    {
-
-        if (isset($options['mime'])) {
-            $attachment->setContentType($options['mime']);
-        }
-
-        if (isset($options['as'])) {
-            $attachment->setFilename($options['as']);
-        }
-
-        $this->swift->attach($attachment);
-
-        return $this;
+        return $this->mail->addEmbeddedFile($file, $content, $contentType);
     }
 
     /**
      * Get the underlying Swift Message instance.
      *
-     * @return Swift_Message
+     * @return \Nette\Mail\Message
      */
-    public function getSwiftMessage()
+    public function getMail()
     {
-        return $this->swift;
+        return $this->mail;
     }
 
     /**
@@ -502,7 +380,7 @@ class Message
      */
     public function __call($method, $parameters)
     {
-        $callable = [$this->swift, $method];
+        $callable = [$this->mail, $method];
 
         return call_user_func_array($callable, $parameters);
     }

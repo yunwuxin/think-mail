@@ -11,9 +11,8 @@
 namespace yunwuxin;
 
 use InvalidArgumentException;
-use Swift_Mailer;
-use Swift_SendmailTransport;
-use Swift_SmtpTransport;
+use Nette\Mail\SendmailMailer;
+use Nette\Mail\SmtpMailer;
 use think\helper\Arr;
 use think\Manager;
 use yunwuxin\mail\Mailable;
@@ -54,26 +53,18 @@ class Mail extends Manager
 
     protected function createSmtpDriver($config)
     {
-        $transport = new Swift_SmtpTransport($config['host'], $config['port']);
-        if (isset($config['encryption'])) {
-            $transport->setEncryption($config['encryption']);
-        }
-
-        if (isset($config['username'], $config['password'])) {
-            $transport->setUsername($config['username']);
-            $transport->setPassword($config['password']);
-        }
-
-        if (isset($config['stream'])) {
-            $transport->setStreamOptions($config['stream']);
-        }
-
-        return $transport;
+        return new SmtpMailer(
+            host: $config['host'],
+            port: $config['port'],
+            username: $config['username'],
+            password: $config['password'],
+            encryption: $config['encryption'] ?? null,
+        );
     }
 
-    protected function createSendmailDriver($config)
+    protected function createSendmailDriver()
     {
-        return new Swift_SendmailTransport($config['command']);
+        return new SendmailMailer();
     }
 
     protected function resolveConfig(string $name)
@@ -84,10 +75,9 @@ class Mail extends Manager
     protected function createDriver(string $name)
     {
         $transport = parent::createDriver($name);
-        $swift     = new Swift_Mailer($transport);
 
         /** @var Mailer $mailer */
-        $mailer = $this->app->invokeClass(Mailer::class, [$swift]);
+        $mailer = $this->app->invokeClass(Mailer::class, [$transport]);
 
         $mailer->from($this->app->config->get('mail.from'));
 

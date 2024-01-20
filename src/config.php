@@ -21,8 +21,7 @@ return [
             'password'   => 'password',
         ],
         'sendmail' => [
-            'type'    => 'sendmail',
-            'command' => '/usr/sbin/sendmail -bs',
+            'type' => 'sendmail',
         ],
     ],
     'from'       => [

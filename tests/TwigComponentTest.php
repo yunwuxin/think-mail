@@ -23,7 +23,7 @@ class TwigComponentTest extends TestCase
     /** @var Twig */
     protected $twig;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->app = m::mock(App::class)->makePartial();
 

@@ -10,7 +10,7 @@
 // +----------------------------------------------------------------------
 namespace yunwuxin\mail;
 
-use Swift_Mailer;
+use Nette\Mail\Mailer as Transport;
 use think\App;
 use think\Queue;
 use think\queue\Queueable;
@@ -19,8 +19,8 @@ use think\queue\ShouldQueue;
 class Mailer
 {
 
-    /** @var  Swift_Mailer */
-    protected $swift;
+    /** @var  Transport */
+    protected $transport;
 
     /** @var array 发信人 */
     protected $from;
@@ -34,20 +34,17 @@ class Mailer
     /** @var array 密送 */
     protected $bcc = [];
 
-    /** @var array 发送失败的地址 */
-    protected $failedRecipients = [];
-
     /** @var Queue */
     protected $queue;
 
     /** @var App */
     protected $app;
 
-    public function __construct(Swift_Mailer $swift, Queue $queue, App $app)
+    public function __construct(Transport $transport, Queue $queue, App $app)
     {
-        $this->swift = $swift;
-        $this->queue = $queue;
-        $this->app   = $app;
+        $this->transport = $transport;
+        $this->queue     = $queue;
+        $this->app       = $app;
     }
 
     public function from($users)
@@ -98,7 +95,7 @@ class Mailer
         $message = $this->createMessage($mailable);
 
         if (isset($this->to['address'])) {
-            $message->to($this->to['address'], $this->to['name'], true);
+            $message->to($this->to['address'], $this->to['name']);
         }
 
         if (!empty($this->cc)) {
@@ -113,9 +110,9 @@ class Mailer
 
     /**
      * 推送至队列发送
-     * @param Mailable $mailable
+     * @param Mailable|ShouldQueue $mailable
      */
-    public function queue(Mailable $mailable)
+    public function queue($mailable)
     {
         $job = new SendQueuedMailable($mailable);
 
@@ -129,15 +126,6 @@ class Mailer
         } else {
             $this->queue->push($job);
         }
-    }
-
-    /**
-     * 发送失败的地址
-     * @return array
-     */
-    public function failures()
-    {
-        return $this->failedRecipients;
     }
 
     /**
@@ -157,15 +145,10 @@ class Mailer
     /**
      * 发送Message
      * @param Message $message
-     * @return mixed
      */
     protected function sendMessage($message)
     {
-        try {
-            return $this->swift->send($message->getSwiftMessage(), $this->failedRecipients);
-        } finally {
-            $this->swift->getTransport()->stop();
-        }
+        $this->transport->send($message->getMail());
     }
 
 }

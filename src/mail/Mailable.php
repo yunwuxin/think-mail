@@ -17,9 +17,9 @@ use think\Collection;
  * Class Mailable
  * @package yunwuxin\mail
  *
- * @property string  $queue
+ * @property string $queue
  * @property integer $delay
- * @property string  $connection
+ * @property string $connection
  */
 class Mailable
 {
@@ -68,7 +68,7 @@ class Mailable
         //...
     }
 
-    public function withSwiftMessage($callback)
+    public function withMessage($callback)
     {
         $this->callbacks[] = $callback;
 
@@ -134,8 +134,8 @@ class Mailable
      * 设置地址
      *
      * @param object|array|string $address
-     * @param string|null         $name
-     * @param string              $property
+     * @param string|null $name
+     * @param string $property
      * @return $this
      */
     protected function setAddress($address, $name = null, $property = 'to')
@@ -242,12 +242,11 @@ class Mailable
     /**
      * 设置附件
      * @param       $file
-     * @param array $options
      * @return $this
      */
-    public function attach($file, array $options = [])
+    public function attach($file)
     {
-        $this->attachments[] = compact('file', 'options');
+        $this->attachments[] = $file;
 
         return $this;
     }
@@ -256,12 +255,11 @@ class Mailable
      * 设置附件
      * @param       $data
      * @param       $name
-     * @param array $options
      * @return $this
      */
-    public function attachData($data, $name, array $options = [])
+    public function attachData($data, $name)
     {
-        $this->rawAttachments[] = compact('data', 'name', 'options');
+        $this->rawAttachments[] = compact('data', 'name');
 
         return $this;
     }
